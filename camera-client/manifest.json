@@ -1,0 +1,14 @@
+{
+  "name": "AudioCam – Kamera",
+  "short_name": "AudioCam",
+  "description": "Kamera bezpieczeństwa z detekcją dźwięku",
+  "start_url": "/camera/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    { "src": "/camera/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/camera/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

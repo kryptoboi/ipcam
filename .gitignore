@@ -1,0 +1,10 @@
+node_modules/
+recordings/
+*.log
+.env
+.env.*
+subscriptions.json
+events.json
+key.json
+/tmp/
+*.DS_Store

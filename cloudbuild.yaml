@@ -1,0 +1,69 @@
+steps:
+  # 1. Zbuduj obraz Docker
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/audiocam:$COMMIT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/audiocam:latest'
+      - '.'
+    id: 'build'
+
+  # 2. Push do Google Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/audiocam:$COMMIT_SHA'
+    id: 'push'
+    waitFor: ['build']
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/audiocam:latest'
+    id: 'push-latest'
+    waitFor: ['push']
+
+  # 3. Deploy na Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        # Podmień placeholder obrazu w YAML
+        sed "s|IMAGE_PLACEHOLDER|gcr.io/$PROJECT_ID/audiocam:$COMMIT_SHA|g" \
+          deploy/cloudrun.yaml > /tmp/cloudrun-deploy.yaml
+        
+        # Deploy
+        gcloud run services replace /tmp/cloudrun-deploy.yaml \
+          --region=$_REGION \
+          --platform=managed
+        
+        # Publiczny dostęp (HTTPS)
+        gcloud run services add-iam-policy-binding audiocam \
+          --region=$_REGION \
+          --member="allUsers" \
+          --role="roles/run.invoker" \
+          --platform=managed
+        
+        echo "✅ Deploy zakończony!"
+        gcloud run services describe audiocam \
+          --region=$_REGION \
+          --platform=managed \
+          --format="value(status.url)"
+    id: 'deploy'
+    waitFor: ['push-latest']
+
+images:
+  - 'gcr.io/$PROJECT_ID/audiocam:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/audiocam:latest'
+
+substitutions:
+  _REGION: europe-west1  # Zmień na swój region
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'E2_HIGHCPU_8'
+
+timeout: '1200s'

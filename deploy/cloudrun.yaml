@@ -1,0 +1,58 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: audiocam
+  annotations:
+    run.googleapis.com/ingress: all
+spec:
+  template:
+    metadata:
+      annotations:
+        # Skaluj do 0 gdy brak ruchu (oszczędność kosztów)
+        autoscaling.knative.dev/minScale: "1"
+        autoscaling.knative.dev/maxScale: "3"
+        # Efemeryczny dysk SSD 10GB na nagrania
+        run.googleapis.com/execution-environment: gen2
+    spec:
+      containerConcurrency: 10
+      timeoutSeconds: 3600
+      containers:
+        - image: IMAGE_PLACEHOLDER  # zastąpione przez cloudbuild
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PORT
+              value: "8080"
+            - name: NODE_ENV
+              value: "production"
+            # WAŻNE: Te zmienne ustaw w Google Cloud Secret Manager lub Cloud Run Secrets
+            - name: AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: audiocam-auth-token
+                  key: latest
+            - name: VAPID_PUBLIC_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: audiocam-vapid-public
+                  key: latest
+            - name: VAPID_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: audiocam-vapid-private
+                  key: latest
+            - name: VAPID_EMAIL
+              value: "mailto:admin@example.com"
+            - name: MAX_RECORDINGS
+              value: "100"
+          resources:
+            limits:
+              memory: 1Gi
+              cpu: "1"
+          volumeMounts:
+            - mountPath: /app/recordings
+              name: recordings-vol
+      volumes:
+        - name: recordings-vol
+          emptyDir:
+            sizeLimit: 10Gi
