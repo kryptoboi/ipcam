@@ -233,7 +233,7 @@ app.post('/api/upload/clip', authMiddleware, upload.single('video'), async (req,
   if (!req.file) return res.status(400).json({ error: 'No file' });
 
   const fileUrl = `/clips/${req.file.filename}`;
-    fetch('https://ntfy.sh/YOUR_TOPIC_NAME', {
+    fetch('https://ntfy.sh/e', {
     method: 'POST',
     body: `🔊 Dźwięk wykryty o ${new Date().toLocaleTimeString('pl-PL')}`,
     headers: { 'Title': 'AudioCam Alert', 'Priority': 'high' }
@@ -389,7 +389,7 @@ function handleSignaling(ws, msg) {
     default:
       broadcast({ ...msg, fromId: ws.id }, ws);
         // ✅ ADD THIS too if you want instant WS-triggered alerts
-  fetch('https://ntfy.sh/YOUR_TOPIC_NAME', {
+  fetch('https://ntfy.sh/e', {
     method: 'POST',
     body: `🔊 Dźwięk ${msg.level} dB`,
     headers: { 'Title': 'AudioCam', 'Priority': 'high' }
