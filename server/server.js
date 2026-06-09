@@ -98,6 +98,130 @@ function authMiddleware(req, res, next) {
 
 // Serwuj pliki statyczne (klienty)
 app.use('/camera', express.static(path.join(__dirname, '../camera-client')));
+
+// ─── WebDAV – tylko do odczytu dla FolderSync ────────────────────────────────
+// FolderSync łączy się przez: https://serwer/webdav/clips/
+// Login: dowolny, Hasło: AUTH_TOKEN
+
+function webdavAuth(req, res, next) {
+  const auth = req.headers['authorization'] || '';
+  if (!auth.startsWith('Basic ')) {
+    res.set('WWW-Authenticate', 'Basic realm="AudioCam WebDAV"');
+    return res.status(401).send('Unauthorized');
+  }
+  const decoded = Buffer.from(auth.slice(6), 'base64').toString();
+  const password = decoded.split(':').slice(1).join(':'); // wszystko po pierwszym ':'
+  if (password !== AUTH_TOKEN) {
+    res.set('WWW-Authenticate', 'Basic realm="AudioCam WebDAV"');
+    return res.status(401).send('Unauthorized');
+  }
+  next();
+}
+
+// PROPFIND – lista plików (FolderSync używa tego do sprawdzenia co jest nowe)
+app.use('/webdav', webdavAuth, (req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    res.set('DAV', '1');
+    res.set('Allow', 'OPTIONS, GET, HEAD, PROPFIND');
+    return res.status(200).end();
+  }
+  next();
+});
+
+app.propfind = app.propfind || ((path, ...handlers) => app.all(path, (req, res, next) => {
+  if (req.method === 'PROPFIND') handlers[handlers.length - 1](req, res, next);
+  else next();
+}));
+
+// Obsługa PROPFIND i GET dla /webdav/clips/
+['PROPFIND', 'GET', 'HEAD'].forEach(method => {
+  app[method.toLowerCase()] = app[method.toLowerCase()] || ((p, ...h) => app.all(p, (req, res, next) => {
+    if (req.method === method) h[h.length-1](req, res, next); else next();
+  }));
+});
+
+app.all('/webdav/clips', webdavAuth, (req, res) => {
+  if (req.method === 'PROPFIND') return handlePropfind(req, res, SHORT_CLIPS_DIR, '/webdav/clips');
+  res.redirect('/webdav/clips/');
+});
+
+app.all('/webdav/clips/', webdavAuth, (req, res) => {
+  if (req.method === 'PROPFIND') return handlePropfind(req, res, SHORT_CLIPS_DIR, '/webdav/clips');
+  res.status(200).end();
+});
+
+app.all('/webdav/clips/:filename', webdavAuth, (req, res) => {
+  const filename = req.params.filename;
+  const filepath = path.join(SHORT_CLIPS_DIR, filename);
+
+  if (req.method === 'PROPFIND') {
+    if (!fs.existsSync(filepath)) return res.status(404).end();
+    const stat = fs.statSync(filepath);
+    return res.status(207).set('Content-Type', 'application/xml').send(
+      buildPropfindXml([{ name: filename, stat, href: `/webdav/clips/${filename}` }])
+    );
+  }
+
+  if (req.method === 'GET' || req.method === 'HEAD') {
+    if (!fs.existsSync(filepath)) return res.status(404).end();
+    const stat = fs.statSync(filepath);
+    res.set('Content-Type', 'video/webm');
+    res.set('Content-Length', stat.size);
+    res.set('Last-Modified', stat.mtime.toUTCString());
+    if (req.method === 'HEAD') return res.end();
+    return res.sendFile(filepath);
+  }
+
+  res.status(405).end();
+});
+
+function handlePropfind(req, res, dir, basePath) {
+  const depth = req.headers['depth'] || '1';
+  const entries = [];
+
+  // Dodaj sam katalog
+  entries.push({ name: '', stat: { size: 0, mtime: new Date(), isDirectory: () => true }, href: basePath + '/', isDir: true });
+
+  // Dodaj pliki jeśli depth=1
+  if (depth !== '0' && fs.existsSync(dir)) {
+    fs.readdirSync(dir)
+      .filter(f => f.match(/\.(webm|mp4)$/i))
+      .forEach(f => {
+        const stat = fs.statSync(path.join(dir, f));
+        entries.push({ name: f, stat, href: `${basePath}/${f}`, isDir: false });
+      });
+  }
+
+  res.status(207).set('Content-Type', 'application/xml; charset=utf-8').send(
+    buildPropfindXml(entries)
+  );
+}
+
+function buildPropfindXml(entries) {
+  const responses = entries.map(e => {
+    const isDir = e.isDir || (e.stat && e.stat.isDirectory && e.stat.isDirectory());
+    const mtime = e.stat.mtime instanceof Date ? e.stat.mtime : new Date(e.stat.mtime);
+    return `
+  <D:response>
+    <D:href>${e.href}</D:href>
+    <D:propstat>
+      <D:prop>
+        <D:displayname>${e.name}</D:displayname>
+        <D:getcontentlength>${isDir ? 0 : e.stat.size}</D:getcontentlength>
+        <D:getlastmodified>${mtime.toUTCString()}</D:getlastmodified>
+        <D:resourcetype>${isDir ? '<D:collection/>' : ''}</D:resourcetype>
+        <D:getcontenttype>${isDir ? 'httpd/unix-directory' : 'video/webm'}</D:getcontenttype>
+      </D:prop>
+      <D:status>HTTP/1.1 200 OK</D:status>
+    </D:propstat>
+  </D:response>`;
+  }).join('');
+
+  return `<?xml version="1.0" encoding="utf-8"?>
+<D:multistatus xmlns:D="DAV:">
+${responses}
+</D:multistatus>`;
+}
 app.use('/receiver', express.static(path.join(__dirname, '../receiver-client')));
 app.use('/clips', express.static(SHORT_CLIPS_DIR));
 app.use('/', express.static(path.join(__dirname, '../camera-client'))); // domyślnie kamera
