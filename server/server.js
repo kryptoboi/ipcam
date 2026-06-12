@@ -233,12 +233,6 @@ app.post('/api/upload/clip', authMiddleware, upload.single('video'), async (req,
   if (!req.file) return res.status(400).json({ error: 'No file' });
 
   const fileUrl = `/clips/${req.file.filename}`;
-    fetch('https://ntfy.sh/e', {
-    method: 'POST',
-    body: `🔊 Dźwięk wykryty o ${new Date().toLocaleTimeString('pl-PL')}`,
-    headers: { 'Title': 'AudioCam Alert', 'Priority': 'high' }
-  }).catch(e => console.error('[NTFY]', e.message));
-  
   console.log(`[CLIP] Saved: ${req.file.filename} (${(req.file.size / 1024).toFixed(1)} KB)`);
 
   // Wyślij powiadomienie push do wszystkich subskrybentów
@@ -381,20 +375,21 @@ function handleSignaling(ws, msg) {
       break;
 
     case 'sound_event':
-      // Kamera informuje serwer o wykryciu dźwięku (bez uploadu)
+      // Kamera informuje serwer o wykryciu dźwięku – NATYCHMIAST push i broadcast
       console.log(`[SOUND] Level: ${msg.level} dB`);
       broadcast({ type: 'sound_alert', level: msg.level, timestamp: Date.now() }, ws);
+      // Push natychmiast przy przekroczeniu progu (nie czekamy na nagranie)
+      sendPushNotifications({
+        title: '🔊 Wykryto dźwięk!',
+        body: `Poziom: ${msg.level} dB – ${new Date().toLocaleTimeString('pl-PL')}`,
+        url: '/receiver',
+        timestamp: Date.now()
+      });
+      appendEventLog('sound_detected_live', { level: msg.level });
       break;
 
     default:
       broadcast({ ...msg, fromId: ws.id }, ws);
-        // ✅ ADD THIS too if you want instant WS-triggered alerts
-  fetch('https://ntfy.sh/e', {
-    method: 'POST',
-    body: `🔊 Dźwięk ${msg.level} dB`,
-    headers: { 'Title': 'AudioCam', 'Priority': 'high' }
-  }).catch(() => {});
-  break;
   }
 }
 
