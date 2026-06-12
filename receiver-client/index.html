@@ -16,29 +16,93 @@
     body {
       background: var(--bg); color: var(--text);
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      min-height: 100vh; display: flex; flex-direction: column;
+      min-height: 100vh; display: flex; flex-direction: column; overflow: hidden;
     }
     header {
       background: var(--surface); border-bottom: 1px solid var(--border);
-      padding: 12px 16px; display: flex; align-items: center; gap: 10px;
-      position: sticky; top: 0; z-index: 10;
+      padding: 10px 14px; display: flex; align-items: center; gap: 10px;
+      position: sticky; top: 0; z-index: 100; flex-shrink: 0;
     }
-    .logo { font-size: 18px; font-weight: 700; }
+    .logo { font-size: 17px; font-weight: 700; }
     .logo span { color: var(--accent); }
-    #camStatus { margin-left: auto; font-size: 11px; }
-    .badge {
-      padding: 3px 8px; border-radius: 20px; font-size: 11px; font-weight: 600;
-    }
+    #camStatus { margin-left: auto; font-size: 11px; padding: 3px 9px; border-radius: 20px; font-weight: 600; }
     .badge-online { background: rgba(16,185,129,0.2); color: var(--accent2); }
-    .badge-offline { background: rgba(239,68,68,0.2); color: var(--danger); }
+    .badge-offline { background: rgba(239,68,68,0.15); color: var(--danger); }
 
-    /* Tabs */
+    /* ── LIVE VIDEO – pełny pionowy format ── */
+    #liveSection {
+      position: relative; background: #000;
+      flex-shrink: 0;
+    }
+    #liveVideo {
+      display: block; width: 100%;
+      /* Pionowy format 9:16 */
+      aspect-ratio: 9/16;
+      object-fit: cover;
+      background: #000;
+    }
+    #liveOverlay {
+      position: absolute; inset: 0; display: flex; flex-direction: column;
+      justify-content: space-between; pointer-events: none;
+      padding: 10px;
+    }
+    #liveTopBar {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    #liveBadge {
+      display: none; align-items: center; gap: 5px;
+      background: rgba(239,68,68,0.85); color: #fff;
+      padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700;
+    }
+    #liveBadge.visible { display: flex; }
+    #liveDot { width: 7px; height: 7px; border-radius: 50%; background: #fff; animation: pulse 1s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
+
+    #soundBadge {
+      display: none; align-items: center; gap: 5px;
+      background: rgba(245,158,11,0.9); color: #000;
+      padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700;
+    }
+    #soundBadge.visible { display: flex; }
+
+    #liveBottomBar {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    #levelPill {
+      background: rgba(0,0,0,0.6); color: var(--text);
+      padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    }
+
+    /* Placeholder gdy brak streamu */
+    #noStreamPlaceholder {
+      position: absolute; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 10px;
+      background: #000; color: var(--muted); font-size: 14px;
+    }
+    #noStreamPlaceholder .icon { font-size: 48px; }
+    #connectLiveBtn {
+      pointer-events: all; margin-top: 8px;
+      background: var(--accent); color: #fff; border: none;
+      padding: 10px 24px; border-radius: 8px; font-size: 14px; font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* ── Alert banner ── */
+    #alertBanner {
+      display: none; align-items: center; gap: 10px; flex-shrink: 0;
+      background: rgba(245,158,11,0.15); border-bottom: 1px solid var(--warn);
+      padding: 10px 14px; font-size: 13px; font-weight: 600; color: var(--warn);
+    }
+    #alertBanner.visible { display: flex; }
+    .alert-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--warn); animation: pulse 0.8s infinite; flex-shrink: 0; }
+
+    /* ── Tabs ── */
     .tabs {
       display: flex; background: var(--surface);
-      border-bottom: 1px solid var(--border);
+      border-bottom: 1px solid var(--border); flex-shrink: 0;
     }
     .tab {
-      flex: 1; padding: 10px 4px; text-align: center; font-size: 12px;
+      flex: 1; padding: 9px 4px; text-align: center; font-size: 12px;
       cursor: pointer; border-bottom: 2px solid transparent; color: var(--muted);
       transition: all 0.2s; font-weight: 500;
     }
@@ -47,137 +111,100 @@
     .tab-content { display: none; flex: 1; overflow-y: auto; }
     .tab-content.active { display: flex; flex-direction: column; }
 
-    /* Alert banner */
-    #alertBanner {
-      display: none; align-items: center; gap: 10px;
-      background: rgba(245,158,11,0.2); border: 1px solid var(--warn);
-      border-radius: var(--radius); padding: 12px 14px; margin: 12px;
-      font-size: 13px; font-weight: 600; color: var(--warn);
-    }
-    #alertBanner.visible { display: flex; }
-    .alert-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--warn); animation: pulse 0.8s infinite; }
-    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
-
-    /* Level indicator */
-    #levelBar {
-      margin: 0 12px; height: 8px; border-radius: 4px; overflow: hidden;
-      background: var(--border);
-    }
-    #levelFill {
-      height: 100%; width: 0%; border-radius: 4px;
-      background: linear-gradient(90deg, var(--accent2), var(--warn), var(--danger));
-      transition: width 0.15s;
-    }
-
-    /* Clips list */
-    .clips-grid { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+    /* ── Klipy ── */
+    .clips-grid { padding: 10px; display: flex; flex-direction: column; gap: 10px; }
     .clip-card {
       background: var(--surface); border: 1px solid var(--border);
       border-radius: var(--radius); overflow: hidden;
     }
-    .clip-card video { width: 100%; max-height: 180px; background: #000; display: block; }
-    .clip-info { padding: 10px 12px; display: flex; align-items: center; justify-content: space-between; }
+    /* Klipy też pionowo */
+    .clip-card video {
+      display: block; width: 100%;
+      aspect-ratio: 9/16;
+      object-fit: cover; background: #000;
+    }
+    .clip-info { padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; }
     .clip-time { font-size: 12px; color: var(--muted); }
     .clip-size { font-size: 11px; color: var(--muted); }
     .new-badge { background: var(--danger); color: #fff; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; }
 
-    /* Stats tab */
-    .stats-page { padding: 12px; display: flex; flex-direction: column; gap: 12px; }
-    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; }
-    .card h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 10px; }
+    /* ── Stats ── */
+    .stats-page { padding: 10px; display: flex; flex-direction: column; gap: 10px; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; }
+    .card h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 10px; }
     .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .stat { background: var(--bg); border-radius: 8px; padding: 10px; text-align: center; }
-    .stat .val { font-size: 22px; font-weight: 700; color: var(--accent); }
+    .stat .val { font-size: 20px; font-weight: 700; color: var(--accent); }
     .stat .lbl { font-size: 11px; color: var(--muted); margin-top: 2px; }
-
-    /* Events log */
     #eventsList { display: flex; flex-direction: column; gap: 4px; }
-    .event-row {
-      display: flex; align-items: center; gap: 10px;
-      padding: 8px 10px; background: var(--bg); border-radius: 8px;
-      font-size: 12px;
-    }
-    .event-icon { font-size: 16px; }
+    .event-row { display: flex; align-items: center; gap: 8px; padding: 7px 10px; background: var(--bg); border-radius: 8px; font-size: 12px; }
     .event-time { color: var(--muted); font-size: 11px; white-space: nowrap; }
     .event-desc { flex: 1; }
 
-    /* Settings */
-    .settings-page { padding: 12px; display: flex; flex-direction: column; gap: 12px; }
-    .input-group { display: flex; flex-direction: column; gap: 6px; }
+    /* ── Settings ── */
+    .settings-page { padding: 10px; display: flex; flex-direction: column; gap: 10px; }
+    .input-group { display: flex; flex-direction: column; gap: 5px; }
     .input-group label { font-size: 12px; color: var(--muted); }
     .input-group input {
       background: var(--bg); color: var(--text); border: 1px solid var(--border);
       border-radius: 8px; padding: 10px 12px; font-size: 14px; width: 100%;
     }
-    .btn {
-      padding: 12px 20px; border-radius: 8px; border: none; cursor: pointer;
-      font-size: 14px; font-weight: 600; width: 100%;
-    }
+    .btn { padding: 11px 20px; border-radius: 8px; border: none; cursor: pointer; font-size: 14px; font-weight: 600; width: 100%; }
     .btn-primary { background: var(--accent); color: #fff; }
     .btn-success { background: var(--accent2); color: #fff; }
     .btn-danger { background: var(--danger); color: #fff; }
-
-    .empty { text-align: center; color: var(--muted); padding: 40px 20px; font-size: 14px; }
-
-    /* Refresh spinner */
-    #refreshBtn { 
-      background: none; border: 1px solid var(--border); color: var(--muted);
-      padding: 6px 12px; border-radius: 8px; font-size: 12px; cursor: pointer;
-    }
+    .empty { text-align: center; color: var(--muted); padding: 30px 20px; font-size: 14px; }
+    #refreshBtn { background: none; border: 1px solid var(--border); color: var(--muted); padding: 5px 10px; border-radius: 8px; font-size: 12px; cursor: pointer; }
   </style>
 </head>
 <body>
 
 <header>
   <div class="logo">Audio<span>Cam</span> 📺</div>
-  <span id="camStatus" class="badge badge-offline">● Kamera offline</span>
+  <span id="camStatus" class="badge-offline" style="font-size:11px;padding:3px 9px;border-radius:20px;font-weight:600;">● Offline</span>
 </header>
 
+<!-- ── Alert banner ── -->
+<div id="alertBanner">
+  <div class="alert-dot"></div>
+  <span id="alertText">Wykryto dźwięk!</span>
+  <button onclick="dismissAlert()" style="margin-left:auto;background:none;border:none;color:var(--warn);font-size:18px;cursor:pointer;line-height:1;">✕</button>
+</div>
+
+<!-- ── Live video – ZAWSZE WIDOCZNY na górze ── -->
+<div id="liveSection">
+  <video id="liveVideo" autoplay playsinline muted></video>
+  <div id="liveOverlay">
+    <div id="liveTopBar">
+      <div id="liveBadge"><div id="liveDot"></div>LIVE</div>
+      <div id="soundBadge">🔊 DŹWIĘK</div>
+    </div>
+    <div id="liveBottomBar">
+      <div id="levelPill">-- dB</div>
+    </div>
+  </div>
+  <div id="noStreamPlaceholder">
+    <div class="icon">📷</div>
+    <div>Brak połączenia z kamerą</div>
+    <button id="connectLiveBtn" onclick="startWebRTC()">▶ Połącz live</button>
+  </div>
+</div>
+
+<!-- ── Tabs ── -->
 <div class="tabs">
   <div class="tab active" onclick="switchTab('clips')">🎬 Klipy</div>
-  <div class="tab" onclick="switchTab('live')">📡 Na żywo</div>
   <div class="tab" onclick="switchTab('stats')">📊 Dane</div>
   <div class="tab" onclick="switchTab('settings')">⚙️ Ustaw.</div>
 </div>
 
 <!-- TAB: Klipy -->
 <div id="tab-clips" class="tab-content active">
-  <div id="alertBanner">
-    <div class="alert-dot"></div>
-    <span id="alertText">Wykryto dźwięk!</span>
-    <button onclick="dismissAlert()" style="margin-left:auto;background:none;border:none;color:var(--warn);font-size:18px;cursor:pointer">✕</button>
-  </div>
-  <div id="levelBar"><div id="levelFill"></div></div>
-  <div style="padding: 8px 12px; display:flex; justify-content:space-between; align-items:center;">
-    <span style="font-size:12px;color:var(--muted)">Ostatnie 10-sek klipy (FolderSync)</span>
+  <div style="padding:8px 12px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
+    <span style="font-size:12px;color:var(--muted)">Ostatnie klipy (10 sek)</span>
     <button id="refreshBtn" onclick="loadClips()">↻ Odśwież</button>
   </div>
   <div class="clips-grid" id="clipsGrid">
     <div class="empty">Brak klipów.<br>Uruchom kamerę i poczekaj na dźwięk.</div>
-  </div>
-</div>
-
-<!-- TAB: Na żywo (tylko podgląd audio) -->
-<div id="tab-live" class="tab-content">
-  <div style="padding:12px;display:flex;flex-direction:column;gap:12px;">
-    <div class="card">
-      <h3>📡 Podgląd na żywo</h3>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">
-        Aby oglądać na żywo wideo, otwórz przeglądarkę pod adresem kamery.<br>
-        Ten panel pokazuje powiadomienia w czasie rzeczywistym.
-      </p>
-      <div id="liveStatusCard" style="background:var(--bg);border-radius:8px;padding:12px;">
-        <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">STATUS KAMERY</div>
-        <div id="liveStatus" style="font-size:20px;font-weight:700;color:var(--muted)">Offline</div>
-        <div id="liveLevel" style="font-size:12px;color:var(--muted);margin-top:4px;">Poziom dźwięku: --</div>
-      </div>
-    </div>
-    <div class="card">
-      <h3>🔔 Alerty w czasie rzeczywistym</h3>
-      <div id="liveAlerts" style="font-size:12px;color:var(--muted);font-family:monospace;max-height:250px;overflow-y:auto;">
-        <div>Oczekiwanie na połączenie...</div>
-      </div>
-    </div>
   </div>
 </div>
 
@@ -187,14 +214,14 @@
     <div class="card">
       <h3>📊 Podsumowanie</h3>
       <div class="stats-grid">
-        <div class="stat"><div class="val" id="statTotalClips">–</div><div class="lbl">Klipy łącznie</div></div>
+        <div class="stat"><div class="val" id="statTotalClips">–</div><div class="lbl">Klipy</div></div>
         <div class="stat"><div class="val" id="statTotalRecs">–</div><div class="lbl">Nagrania 5-min</div></div>
         <div class="stat"><div class="val" id="statAlerts">0</div><div class="lbl">Alerty sesji</div></div>
-        <div class="stat"><div class="val" id="statMaxLevel">–</div><div class="lbl">Max dB sesji</div></div>
+        <div class="stat"><div class="val" id="statMaxLevel">–</div><div class="lbl">Max dB</div></div>
       </div>
     </div>
     <div class="card">
-      <h3>📋 Log serwera (ostatnie 20)</h3>
+      <h3>📋 Ostatnie zdarzenia</h3>
       <div id="eventsList"><div style="color:var(--muted);font-size:13px;">Ładowanie...</div></div>
     </div>
   </div>
@@ -205,7 +232,7 @@
   <div class="settings-page">
     <div class="card">
       <h3>🔗 Konfiguracja</h3>
-      <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="display:flex;flex-direction:column;gap:10px;">
         <div class="input-group">
           <label>URL serwera</label>
           <input type="url" id="serverUrlInput" placeholder="https://twoj-serwer.run.app">
@@ -214,28 +241,26 @@
           <label>Token autoryzacji</label>
           <input type="password" id="tokenInput" placeholder="changeme-strong-token">
         </div>
-        <button class="btn btn-primary" onclick="saveSettings()">💾 Zapisz ustawienia</button>
+        <button class="btn btn-primary" onclick="saveSettings()">💾 Zapisz</button>
       </div>
-    </div>
-    <div class="card">
-      <h3>📁 FolderSync – konfiguracja</h3>
-      <p style="font-size:12px;color:var(--muted);line-height:1.6;">
-        1. Zainstaluj <strong>FolderSync</strong> na tym telefonie<br>
-        2. Dodaj konto SFTP/FTPS wskazując na serwer<br>
-        3. Folder zdalny: <code style="color:var(--accent)">/recordings/clips/</code><br>
-        4. Folder lokalny: dowolny na telefonie<br>
-        5. Kierunek sync: <strong>Zdalny → Lokalny</strong><br>
-        6. Harmonogram: co 1 minutę lub przy nowym pliku<br>
-        7. Włącz powiadomienie przy nowym pliku
-      </p>
     </div>
     <div class="card">
       <h3>🔔 Powiadomienia Push</h3>
       <button class="btn btn-success" onclick="subscribePush()">🔔 Włącz powiadomienia push</button>
-      <p style="font-size:11px;color:var(--muted);margin-top:8px;">Otrzymasz powiadomienie za każdym razem gdy kamera wykryje dźwięk.</p>
+      <p style="font-size:11px;color:var(--muted);margin-top:8px;">Powiadomienie natychmiast gdy kamera wykryje dźwięk — bez czekania na nagranie.</p>
     </div>
     <div class="card">
-      <h3>⚠️ Zarządzanie</h3>
+      <h3>📁 FolderSync WebDAV</h3>
+      <p style="font-size:12px;color:var(--muted);line-height:1.7;">
+        Adres: <code style="color:var(--accent)" id="webdavUrl"></code><br>
+        Login: <code style="color:var(--accent)">user</code><br>
+        Hasło: <code style="color:var(--accent)">twój token</code><br>
+        Kierunek: Zdalny → Lokalny<br>
+        Harmonogram: co 5 minut (WiFi only)
+      </p>
+    </div>
+    <div class="card">
+      <h3>⚠️ Reset</h3>
       <button class="btn btn-danger" onclick="if(confirm('Na pewno?'))clearLocalSettings()">🗑️ Wyczyść ustawienia</button>
     </div>
   </div>
@@ -249,14 +274,17 @@ const CFG = {
 };
 
 let ws = null;
+let peerConnection = null;
 let sessionAlerts = 0;
 let sessionMaxLevel = 0;
 let knownClips = new Set();
+let soundBadgeTimer = null;
 
 // ─── Init ────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('serverUrlInput').value = CFG.serverUrl;
   document.getElementById('tokenInput').value = CFG.token;
+  document.getElementById('webdavUrl').textContent = CFG.serverUrl + '/webdav/clips/';
   connectWS();
   loadClips();
   loadStats();
@@ -267,15 +295,17 @@ document.addEventListener('DOMContentLoaded', () => {
 // ─── WebSocket ───────────────────────────────────────────────────────────────
 function connectWS() {
   const wsUrl = CFG.serverUrl.replace('https://', 'wss://').replace('http://', 'ws://');
-  ws = new WebSocket(wsUrl);
+  try { ws = new WebSocket(wsUrl); } catch { return setTimeout(connectWS, 4000); }
+
   ws.onopen = () => {
     ws.send(JSON.stringify({ type: 'register', role: 'receiver' }));
-    setCamStatus(false);
+    setCamStatus(false, 'Połączono, czekam na kamerę...');
   };
   ws.onclose = () => {
-    setCamStatus(false);
+    setCamStatus(false, 'Offline');
     setTimeout(connectWS, 4000);
   };
+  ws.onerror = () => setCamStatus(false, 'Błąd WS');
   ws.onmessage = (e) => {
     try { handleMsg(JSON.parse(e.data)); } catch {}
   };
@@ -285,26 +315,116 @@ function handleMsg(msg) {
   switch (msg.type) {
     case 'peer_joined':
       if (msg.role === 'camera') {
-        setCamStatus(true);
-        addLiveAlert('📷 Kamera podłączona', 'ok');
+        setCamStatus(true, '● Online');
+        // Automatycznie zainicjuj WebRTC gdy kamera dołączy
+        setTimeout(() => startWebRTC(), 500);
       }
       break;
     case 'peer_disconnected':
-      setCamStatus(false);
-      addLiveAlert('❌ Kamera rozłączona', 'err');
+      setCamStatus(false, '● Offline');
+      stopWebRTC();
       break;
     case 'sound_alert':
       onSoundAlert(msg.level);
       break;
+    // WebRTC signaling
+    case 'offer':
+      handleOffer(msg);
+      break;
+    case 'answer':
+      if (peerConnection) peerConnection.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: msg.sdp }));
+      break;
+    case 'ice_candidate':
+      if (peerConnection && msg.candidate) peerConnection.addIceCandidate(new RTCIceCandidate(msg.candidate)).catch(()=>{});
+      break;
   }
 }
 
-function setCamStatus(online) {
+function setCamStatus(online, label) {
   const el = document.getElementById('camStatus');
-  el.textContent = online ? '● Kamera online' : '● Kamera offline';
-  el.className = 'badge ' + (online ? 'badge-online' : 'badge-offline');
-  document.getElementById('liveStatus').textContent = online ? 'ONLINE' : 'Offline';
-  document.getElementById('liveStatus').style.color = online ? 'var(--accent2)' : 'var(--muted)';
+  el.textContent = label || (online ? '● Online' : '● Offline');
+  el.className = online ? 'badge-online' : 'badge-offline';
+  el.style.cssText = `font-size:11px;padding:3px 9px;border-radius:20px;font-weight:600;background:${online?'rgba(16,185,129,0.2)':'rgba(239,68,68,0.15)'};color:${online?'var(--accent2)':'var(--danger)'}`;
+}
+
+// ─── WebRTC Live Stream ───────────────────────────────────────────────────────
+const RTC_CONFIG = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' }
+  ]
+};
+
+function startWebRTC() {
+  if (peerConnection) stopWebRTC();
+  document.getElementById('connectLiveBtn').textContent = '⏳ Łączę...';
+
+  peerConnection = new RTCPeerConnection(RTC_CONFIG);
+
+  // Odbierz stream wideo z kamery
+  peerConnection.ontrack = (event) => {
+    const video = document.getElementById('liveVideo');
+    if (event.streams && event.streams[0]) {
+      video.srcObject = event.streams[0];
+      video.play().catch(()=>{});
+      document.getElementById('noStreamPlaceholder').style.display = 'none';
+      document.getElementById('liveBadge').classList.add('visible');
+    }
+  };
+
+  peerConnection.onicecandidate = (e) => {
+    if (e.candidate && ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'ice_candidate', candidate: e.candidate }));
+    }
+  };
+
+  peerConnection.onconnectionstatechange = () => {
+    const state = peerConnection?.connectionState;
+    if (state === 'disconnected' || state === 'failed' || state === 'closed') {
+      stopWebRTC();
+    }
+  };
+
+  // Poinformuj kamerę że odbiornik chce stream
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'request_stream' }));
+  }
+}
+
+async function handleOffer(msg) {
+  if (!peerConnection) {
+    peerConnection = new RTCPeerConnection(RTC_CONFIG);
+    peerConnection.ontrack = (event) => {
+      const video = document.getElementById('liveVideo');
+      if (event.streams && event.streams[0]) {
+        video.srcObject = event.streams[0];
+        video.play().catch(()=>{});
+        document.getElementById('noStreamPlaceholder').style.display = 'none';
+        document.getElementById('liveBadge').classList.add('visible');
+      }
+    };
+    peerConnection.onicecandidate = (e) => {
+      if (e.candidate && ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'ice_candidate', candidate: e.candidate }));
+      }
+    };
+  }
+
+  await peerConnection.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: msg.sdp }));
+  const answer = await peerConnection.createAnswer();
+  await peerConnection.setLocalDescription(answer);
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'answer', sdp: answer.sdp, targetId: msg.fromId }));
+  }
+}
+
+function stopWebRTC() {
+  if (peerConnection) { peerConnection.close(); peerConnection = null; }
+  const video = document.getElementById('liveVideo');
+  video.srcObject = null;
+  document.getElementById('noStreamPlaceholder').style.display = 'flex';
+  document.getElementById('noStreamPlaceholder').querySelector('button').textContent = '▶ Połącz live';
+  document.getElementById('liveBadge').classList.remove('visible');
 }
 
 // ─── Sound Alert ─────────────────────────────────────────────────────────────
@@ -313,39 +433,28 @@ function onSoundAlert(level) {
   if (level > sessionMaxLevel) sessionMaxLevel = level;
   document.getElementById('statAlerts').textContent = sessionAlerts;
   document.getElementById('statMaxLevel').textContent = sessionMaxLevel + ' dB';
-  document.getElementById('liveLevel').textContent = `Poziom dźwięku: ${level} dB`;
-
-  // Level bar
-  const pct = Math.min(100, (level / 128) * 100);
-  document.getElementById('levelFill').style.width = pct + '%';
+  document.getElementById('levelPill').textContent = level + ' dB';
 
   // Alert banner
-  const banner = document.getElementById('alertBanner');
-  document.getElementById('alertText').textContent = `🔊 Wykryto dźwięk! ${level} dB – ${new Date().toLocaleTimeString('pl-PL')}`;
-  banner.classList.add('visible');
-  setTimeout(() => banner.classList.remove('visible'), 8000);
+  document.getElementById('alertText').textContent = `🔊 Dźwięk ${level} dB – ${new Date().toLocaleTimeString('pl-PL')}`;
+  document.getElementById('alertBanner').classList.add('visible');
+  setTimeout(() => document.getElementById('alertBanner').classList.remove('visible'), 8000);
 
-  addLiveAlert(`🔊 Dźwięk ${level} dB`, 'warn');
+  // Sound badge na video
+  const sb = document.getElementById('soundBadge');
+  sb.classList.add('visible');
+  if (soundBadgeTimer) clearTimeout(soundBadgeTimer);
+  soundBadgeTimer = setTimeout(() => sb.classList.remove('visible'), 5000);
 
   // Wibracja
   if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
 
-  // Odśwież klipy po chwili (klip może jeszcze nie być gotowy)
+  // Odśwież klipy po 12 sek
   setTimeout(loadClips, 12000);
 }
 
 function dismissAlert() {
   document.getElementById('alertBanner').classList.remove('visible');
-}
-
-function addLiveAlert(msg, type) {
-  const el = document.getElementById('liveAlerts');
-  const time = new Date().toLocaleTimeString('pl-PL');
-  const div = document.createElement('div');
-  div.style.cssText = `padding:2px 0;color:${type==='warn'?'var(--warn)':type==='err'?'var(--danger)':'var(--accent2)'}`;
-  div.textContent = `[${time}] ${msg}`;
-  el.prepend(div);
-  while (el.children.length > 50) el.removeChild(el.lastChild);
 }
 
 // ─── Klipy ───────────────────────────────────────────────────────────────────
@@ -356,38 +465,29 @@ async function loadClips() {
     const clips = await res.json();
     renderClips(clips);
     document.getElementById('statTotalClips').textContent = clips.length;
-  } catch (e) {
-    console.error('Load clips error:', e);
-  }
+  } catch {}
 }
 
 function renderClips(clips) {
   const grid = document.getElementById('clipsGrid');
-  if (clips.length === 0) {
+  if (!clips.length) {
     grid.innerHTML = '<div class="empty">Brak klipów.<br>Uruchom kamerę i poczekaj na dźwięk.</div>';
     return;
   }
   grid.innerHTML = '';
-  clips.slice(0, 20).forEach(clip => {
+  clips.slice(0, 15).forEach(clip => {
     const isNew = !knownClips.has(clip.filename);
     if (isNew) knownClips.add(clip.filename);
     const card = document.createElement('div');
     card.className = 'clip-card';
-    const date = new Date(clip.created);
-    const timeStr = date.toLocaleString('pl-PL');
-    const sizeStr = clip.size > 1024*1024
-      ? `${(clip.size/1024/1024).toFixed(1)} MB`
-      : `${(clip.size/1024).toFixed(0)} KB`;
+    const timeStr = new Date(clip.created).toLocaleString('pl-PL');
+    const sizeStr = clip.size > 1048576 ? `${(clip.size/1048576).toFixed(1)} MB` : `${(clip.size/1024).toFixed(0)} KB`;
     card.innerHTML = `
       <video src="${CFG.serverUrl}/clips/${clip.filename}?token=${CFG.token}" controls preload="metadata" playsinline></video>
       <div class="clip-info">
-        <div>
-          <div class="clip-time">${timeStr}</div>
-          <div class="clip-size">${sizeStr}</div>
-        </div>
+        <div><div class="clip-time">${timeStr}</div><div class="clip-size">${sizeStr}</div></div>
         ${isNew ? '<span class="new-badge">NOWY</span>' : ''}
-      </div>
-    `;
+      </div>`;
     grid.appendChild(card);
   });
 }
@@ -395,17 +495,17 @@ function renderClips(clips) {
 // ─── Statystyki ───────────────────────────────────────────────────────────────
 async function loadStats() {
   try {
-    const [statusRes, eventsRes] = await Promise.all([
+    const [sRes, eRes] = await Promise.all([
       fetch(`${CFG.serverUrl}/api/status`),
       fetch(`${CFG.serverUrl}/api/events?token=${CFG.token}`)
     ]);
-    if (statusRes.ok) {
-      const s = await statusRes.json();
+    if (sRes.ok) {
+      const s = await sRes.json();
       document.getElementById('statTotalClips').textContent = s.clips;
       document.getElementById('statTotalRecs').textContent = s.recordings;
     }
-    if (eventsRes.ok) {
-      const events = await eventsRes.json();
+    if (eRes.ok) {
+      const events = await eRes.json();
       renderEvents(events.reverse().slice(0, 20));
     }
   } catch {}
@@ -418,38 +518,33 @@ function renderEvents(events) {
   events.forEach(ev => {
     const row = document.createElement('div');
     row.className = 'event-row';
-    const icon = ev.type === 'sound_detected' ? '🔊' : ev.type === 'recording_saved' ? '💾' : '📋';
+    const icon = ev.type.includes('sound') ? '🔊' : ev.type.includes('recording') ? '💾' : '📋';
     const time = new Date(ev.timestamp).toLocaleString('pl-PL');
-    const size = ev.size ? ` (${(ev.size/1024/1024).toFixed(1)} MB)` : '';
-    row.innerHTML = `<span class="event-icon">${icon}</span><span class="event-desc">${ev.file || ev.type}${size}</span><span class="event-time">${time}</span>`;
+    const detail = ev.level ? `dźwięk ${ev.level} dB` : ev.file || ev.type;
+    row.innerHTML = `<span>${icon}</span><span class="event-desc">${detail}</span><span class="event-time">${time}</span>`;
     el.appendChild(row);
   });
 }
 
-// ─── Push notifications ───────────────────────────────────────────────────────
+// ─── Push ─────────────────────────────────────────────────────────────────────
 async function subscribePush() {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-    alert('Powiadomienia push niedostępne na tej przeglądarce.'); return;
+    alert('Push niedostępny w tej przeglądarce.'); return;
   }
   try {
     const reg = await navigator.serviceWorker.register('/receiver/sw.js');
     const keyRes = await fetch(`${CFG.serverUrl}/api/vapid-public-key`);
     const { key } = await keyRes.json();
-    if (!key) { alert('Serwer nie ma skonfigurowanych kluczy VAPID. Sprawdź zmienne środowiskowe.'); return; }
-
+    if (!key) { alert('Brak konfiguracji VAPID na serwerze.'); return; }
     const perm = await Notification.requestPermission();
-    if (perm !== 'granted') { alert('Odmówiono uprawnień do powiadomień.'); return; }
-
-    const sub = await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(key)
-    });
-    const res = await fetch(`${CFG.serverUrl}/api/subscribe`, {
+    if (perm !== 'granted') { alert('Odmówiono uprawnień.'); return; }
+    const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(key) });
+    const r = await fetch(`${CFG.serverUrl}/api/subscribe`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-auth-token': CFG.token },
       body: JSON.stringify(sub)
     });
-    if ((await res.json()).success) alert('✅ Powiadomienia push aktywne!');
+    if ((await r.json()).success) alert('✅ Powiadomienia push aktywne! Dostaniesz je NATYCHMIAST przy dźwięku.');
   } catch (e) { alert('Błąd: ' + e.message); }
 }
 
@@ -459,28 +554,21 @@ function saveSettings() {
   CFG.token = document.getElementById('tokenInput').value.trim();
   localStorage.setItem('receiverServerUrl', CFG.serverUrl);
   localStorage.setItem('receiverToken', CFG.token);
+  document.getElementById('webdavUrl').textContent = CFG.serverUrl + '/webdav/clips/';
   alert('✅ Zapisano. Odśwież stronę.');
 }
+function clearLocalSettings() { localStorage.clear(); location.reload(); }
 
-function clearLocalSettings() {
-  localStorage.clear();
-  location.reload();
-}
-
-// ─── Tabs ────────────────────────────────────────────────────────────────────
 function switchTab(name) {
-  document.querySelectorAll('.tab').forEach((t, i) => {
-    t.classList.toggle('active', ['clips','live','stats','settings'][i] === name);
-  });
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['clips','stats','settings'][i] === name));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
   document.getElementById(`tab-${name}`).classList.add('active');
   if (name === 'stats') loadStats();
 }
 
 function urlBase64ToUint8Array(b64) {
-  const padding = '='.repeat((4 - b64.length % 4) % 4);
-  const base64 = (b64 + padding).replace(/-/g, '+').replace(/_/g, '/');
-  const raw = atob(base64);
+  const pad = '='.repeat((4 - b64.length % 4) % 4);
+  const raw = atob((b64 + pad).replace(/-/g,'+').replace(/_/g,'/'));
   return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
 }
 </script>
