@@ -38,6 +38,10 @@ if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
   webpush.setVapidDetails(VAPID_EMAIL, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 }
 
+// ntfy.sh – powiadomienia natychmiastowe (bez VAPID, działa od razu)
+const NTFY_TOPIC = process.env.NTFY_TOPIC || 'e'; // twój topic: ntfy.sh/e
+const NTFY_URL = `https://ntfy.sh/${NTFY_TOPIC}`;
+
 // ─── Upewnij się że katalogi istnieją ───────────────────────────────────────
 
 [RECORDINGS_DIR, SHORT_CLIPS_DIR, LONG_RECORDINGS_DIR].forEach(dir => {
@@ -378,10 +382,12 @@ function handleSignaling(ws, msg) {
       // Kamera informuje serwer o wykryciu dźwięku – NATYCHMIAST push i broadcast
       console.log(`[SOUND] Level: ${msg.level} dB`);
       broadcast({ type: 'sound_alert', level: msg.level, timestamp: Date.now() }, ws);
-      // Push natychmiast przy przekroczeniu progu (nie czekamy na nagranie)
+      // ntfy.sh – natychmiast
+      sendNtfy(msg.level);
+      // Web Push (opcjonalnie, jeśli VAPID skonfigurowane)
       sendPushNotifications({
         title: '🔊 Wykryto dźwięk!',
-        body: `Poziom: ${msg.level} dB – ${new Date().toLocaleTimeString('pl-PL')}`,
+        body: `Poziom: ${msg.level} dB`,
         url: '/receiver',
         timestamp: Date.now()
       });
@@ -400,6 +406,28 @@ function broadcast(msg, exclude) {
       client.send(data);
     }
   });
+}
+
+// ─── ntfy.sh ─────────────────────────────────────────────────────────────────
+
+async function sendNtfy(level) {
+  if (!NTFY_URL) return;
+  try {
+    const time = new Date().toLocaleTimeString('pl-PL');
+    await fetch(NTFY_URL, {
+      method: 'POST',
+      headers: {
+        'Title': 'AudioCam – wykryto dzwiek!',
+        'Priority': level > 80 ? 'urgent' : 'high',
+        'Tags': 'loudspeaker,camera',
+        'Content-Type': 'text/plain'
+      },
+      body: `Poziom: ${level} dB | ${time} | Sprawdz live: /receiver`
+    });
+    console.log(`[NTFY] Sent level=${level} to ${NTFY_URL}`);
+  } catch (e) {
+    console.error('[NTFY] Error:', e.message);
+  }
 }
 
 // ─── Pomocnicze ─────────────────────────────────────────────────────────────
