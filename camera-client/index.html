@@ -272,6 +272,47 @@ let statsEvents = 0, statsClips = 0;
 let ws = null;
 let animFrame = null;
 
+// ─── WebRTC – wysyłanie streamu do odbiornika ─────────────────────────────────
+let peerConnection = null;
+const RTC_CONFIG = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' }
+  ]
+};
+
+async function startRTCSend(targetId) {
+  if (!stream) { log('Stream nieaktywny – nie mogę wysłać', 'error'); return; }
+  if (peerConnection) { peerConnection.close(); }
+
+  peerConnection = new RTCPeerConnection(RTC_CONFIG);
+
+  // Dodaj wszystkie tracki (wideo + audio)
+  stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
+
+  peerConnection.onicecandidate = (e) => {
+    if (e.candidate && ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'ice_candidate', candidate: e.candidate, targetId }));
+    }
+  };
+
+  peerConnection.onconnectionstatechange = () => {
+    const state = peerConnection?.connectionState;
+    log(`WebRTC: ${state}`);
+    if (state === 'connected') log('📡 Stream live aktywny', 'ok');
+    if (state === 'disconnected' || state === 'failed') {
+      peerConnection?.close(); peerConnection = null;
+    }
+  };
+
+  const offer = await peerConnection.createOffer({ offerToReceiveVideo: false });
+  await peerConnection.setLocalDescription(offer);
+
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'offer', sdp: offer.sdp, targetId }));
+  }
+}
+
 // ─── WebSocket ───────────────────────────────────────────────────────────────
 function connectWS() {
   ws = new WebSocket(CONFIG.wsUrl);
@@ -290,8 +331,27 @@ function connectWS() {
 }
 
 function handleWsMsg(msg) {
-  if (msg.type === 'peer_joined' && msg.role === 'receiver') {
-    log('Odbiornik podłączony', 'ok');
+  switch (msg.type) {
+    case 'peer_joined':
+      if (msg.role === 'receiver') {
+        log('Odbiornik podłączony – wysyłam stream', 'ok');
+        if (stream) startRTCSend(msg.id);
+      }
+      break;
+    case 'request_stream':
+      log('Odbiornik żąda streamu', 'ok');
+      if (stream) startRTCSend(msg.fromId);
+      break;
+    case 'answer':
+      if (peerConnection) {
+        peerConnection.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: msg.sdp })).catch(()=>{});
+      }
+      break;
+    case 'ice_candidate':
+      if (peerConnection && msg.candidate) {
+        peerConnection.addIceCandidate(new RTCIceCandidate(msg.candidate)).catch(()=>{});
+      }
+      break;
   }
 }
 
