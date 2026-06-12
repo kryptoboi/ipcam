@@ -235,7 +235,7 @@ app.use('/', express.static(path.join(__dirname, '../camera-client'))); // domy�
 // POST /api/upload/clip  – 10-sekundowy klip (→ FolderSync → drugi telefon)
 app.post('/api/upload/clip', authMiddleware, upload.single('video'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file' });
-
+  sendNtfy(null, req.file.filename);
   const fileUrl = `/clips/${req.file.filename}`;
   console.log(`[CLIP] Saved: ${req.file.filename} (${(req.file.size / 1024).toFixed(1)} KB)`);
 
@@ -410,7 +410,7 @@ function broadcast(msg, exclude) {
 
 // ─── ntfy.sh ─────────────────────────────────────────────────────────────────
 
-async function sendNtfy(level) {
+async function sendNtfy(level, filename) {
   if (!NTFY_URL) return;
   try {
     const time = new Date().toLocaleTimeString('pl-PL');
