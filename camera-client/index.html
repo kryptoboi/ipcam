@@ -19,7 +19,7 @@
       background: var(--bg); color: var(--text);
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       min-height: 100vh; display: flex; flex-direction: column;
-      overflow: hidden;
+      overflow-y: auto; /* scrollowanie */
     }
     header {
       background: var(--surface); border-bottom: 1px solid var(--border);
@@ -37,11 +37,11 @@
     #statusDot.recording { background: var(--danger); animation: pulse 1s infinite; }
     @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
 
-    .main { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+    .main { flex: 1; padding: 12px; display: flex; flex-direction: column; gap: 12px; }
 
     video#preview {
       width: 100%; border-radius: var(--radius);
-      background: #000; max-height: 240px; object-fit: cover;
+      background: #000; max-height: 200px; object-fit: cover;
     }
 
     .card {
