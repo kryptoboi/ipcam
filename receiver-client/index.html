@@ -16,7 +16,8 @@
     body {
       background: var(--bg); color: var(--text);
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      min-height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+      min-height: 100vh; display: flex; flex-direction: column;
+      overflow-y: auto; /* scrollowanie całej strony */
     }
     header {
       background: var(--surface); border-bottom: 1px solid var(--border);
@@ -36,7 +37,8 @@
     }
     #liveVideo {
       display: block; width: 100%;
-      /* Pionowy format 9:16 */
+      /* Kompaktowy podgląd – max 45vh żeby było miejsce na zakładki i klipy */
+      max-height: 45vh;
       aspect-ratio: 9/16;
       object-fit: cover;
       background: #000;
@@ -108,7 +110,7 @@
     }
     .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
-    .tab-content { display: none; flex: 1; overflow-y: auto; }
+    .tab-content { display: none; }
     .tab-content.active { display: flex; flex-direction: column; }
 
     /* ── Klipy ── */
